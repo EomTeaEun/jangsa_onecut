@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { z } from 'zod'
 
 const loginSchema = z.object({
@@ -10,6 +11,7 @@ const loginSchema = z.object({
 })
 
 export default function LoginPage() {
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({})
@@ -17,6 +19,18 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [rateLimitBlocked, setRateLimitBlocked] = useState(false)
   const [blockedUntil, setBlockedUntil] = useState<string | null>(null)
+
+  // 이메일 인증 콜백 실패 시 안내
+  useEffect(() => {
+    const err = searchParams.get('error')
+    if (err === 'auth_callback_failed') {
+      setErrors({
+        general: '인증 링크 처리에 실패했어요. 메일이 만료됐을 수 있어요. 다시 회원가입을 시도해주세요.',
+      })
+    } else if (err) {
+      setErrors({ general: `인증 실패: ${decodeURIComponent(err)}` })
+    }
+  }, [searchParams])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
