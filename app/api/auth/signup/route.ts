@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { checkRateLimit, incrementAttempt } from '@/lib/security/rate-limiter'
+import { getClientIp } from '@/lib/security/get-client-ip'
 
 const schema = z.object({
   email: z.string().email(),
@@ -9,6 +11,18 @@ const schema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request)
+  const rlIdentifier = `${ip}:signup`
+
+  const rl = await checkRateLimit(rlIdentifier, 'signup', 5, 60)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: '회원가입 시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.' },
+      { status: 429 }
+    )
+  }
+  await incrementAttempt(rlIdentifier, 'signup', 5, 60)
+
   let body: unknown
   try {
     body = await request.json()
@@ -18,40 +32,48 @@ export async function POST(request: NextRequest) {
 
   const validation = schema.safeParse(body)
   if (!validation.success) {
-    return NextResponse.json({ error: validation.error.errors[0]?.message || '입력값 오류' }, { status: 400 })
+    return NextResponse.json(
+      { error: validation.error.errors[0]?.message || '입력값 오류' },
+      { status: 400 }
+    )
   }
 
   const { email, password, nickname } = validation.data
+  const supabase = createClient()
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !serviceKey) {
-    return NextResponse.json({ error: '서버 환경변수 누락 (SUPABASE_URL 또는 SERVICE_ROLE_KEY)' }, { status: 500 })
-  }
-
-  const admin = createClient(url, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
-
-  const { data, error } = await admin.auth.admin.createUser({
+  const { data, error } = await supabase.auth.signUp({
     email: email.trim().toLowerCase(),
     password,
-    user_metadata: { nickname },
-    email_confirm: true,
+    options: {
+      data: { nickname },
+      emailRedirectTo: `${request.nextUrl.origin}/auth/callback`,
+    },
   })
 
   if (error) {
-    if (error.message.toLowerCase().includes('already')) {
-      return NextResponse.json({ error: '이미 가입된 이메일입니다. 로그인해주세요.' }, { status: 409 })
+    // 이메일 enumeration 방지: 'already exists' 류는 일반화된 응답
+    if (
+      error.message.toLowerCase().includes('already') ||
+      error.message.toLowerCase().includes('exists') ||
+      error.message.toLowerCase().includes('registered')
+    ) {
+      return NextResponse.json({
+        success: true,
+        needsEmailConfirmation: true,
+      })
     }
-    return NextResponse.json({ error: '회원가입 오류: ' + error.message }, { status: 400 })
+    console.error('Signup error:', error.message)
+    return NextResponse.json({ error: '회원가입에 실패했습니다.' }, { status: 400 })
   }
 
   if (!data.user) {
-    return NextResponse.json({ error: '유저 생성 실패' }, { status: 500 })
+    return NextResponse.json({ error: '유저 생성에 실패했습니다.' }, { status: 500 })
   }
 
-  // 유저 생성만 담당 — 세션은 클라이언트에서 signInWithPassword로 처리
-  return NextResponse.json({ success: true })
+  // Confirm email 켜진 경우 data.session === null (메일 발송됨)
+  // 꺼진 경우 data.session 존재 (즉시 사용 가능)
+  return NextResponse.json({
+    success: true,
+    needsEmailConfirmation: !data.session,
+  })
 }

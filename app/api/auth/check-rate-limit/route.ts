@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit, incrementAttempt } from '@/lib/security/rate-limiter'
+import { getClientIp } from '@/lib/security/get-client-ip'
 import { z } from 'zod'
 
 const schema = z.object({
@@ -16,13 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { email } = validation.data
-
-    // Use IP + email as identifier for rate limiting
-    const ip =
-      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-      request.headers.get('x-real-ip') ||
-      'unknown'
-
+    const ip = getClientIp(request)
     const identifier = `${ip}:${email.toLowerCase()}`
 
     // Check current rate limit status

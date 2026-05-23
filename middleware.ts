@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/reviews') ||
     pathname.startsWith('/settings')
 
-  const isPublicRoute = publicRoutes.includes(pathname)
+  const isPublicRoute = publicRoutes.includes(pathname) || pathname.startsWith('/auth/')
   const isAuthRoute = authRoutes.includes(pathname)
   const isOnboardingRoute = pathname === '/onboarding'
 
