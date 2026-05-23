@@ -107,7 +107,7 @@ Store: ${storeInfo.name || '식당'} (${storeInfo.category || '한식'}), specia
 Scenario: ${scenario}
 Target: ${storeInfo.target_customer?.join(', ') || 'general customers'}
 
-Write ONE English prompt paragraph for a marketing POSTER design. Include: bold graphic poster layout, eye-catching food hero shot, warm inviting color palette, promotional text area at top/bottom, modern Korean restaurant poster aesthetic, professional graphic design quality, portrait format (9:16). No Korean text in prompt, no explanations, just the prompt.`
+Write ONE English prompt paragraph for a marketing POSTER design. Include: bold graphic poster layout, eye-catching food hero shot, warm inviting color palette, promotional text area at top/bottom, modern Korean restaurant poster aesthetic, professional graphic design quality, portrait format (9:16). IMPORTANT: any text visible in the image must be in Korean language only, absolutely no Chinese characters. No explanations, just the prompt.`
 
   const result = await model.generateContent(prompt)
   const response = await result.response

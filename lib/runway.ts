@@ -6,14 +6,17 @@ function getRunwayClient(apiKey: string) {
 
 const MAX_PROMPT_LENGTH = 950
 
+const KOREAN_TEXT_PREFIX = 'Korean language text only in image, no Chinese characters. '
+
 export async function startImageGeneration(
   prompt: string,
   apiKey: string
 ): Promise<string> {
   const client = getRunwayClient(apiKey)
+  const fullPrompt = (KOREAN_TEXT_PREFIX + prompt).slice(0, MAX_PROMPT_LENGTH)
   const task = await client.textToImage.create({
     model: 'gen4_image',
-    promptText: prompt.slice(0, MAX_PROMPT_LENGTH),
+    promptText: fullPrompt,
     ratio: '720:1280',
   })
   return task.id
