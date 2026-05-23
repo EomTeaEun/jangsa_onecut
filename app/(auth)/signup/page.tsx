@@ -36,7 +36,6 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [emailSent, setEmailSent] = useState<string | null>(null)
 
   function getPasswordStrength(pw: string): { strength: number; label: string; color: string } {
     let strength = 0
@@ -84,10 +83,11 @@ export default function SignupPage() {
         return
       }
 
+      const normalizedEmail = email.trim().toLowerCase()
+
       if (data.needsEmailConfirmation) {
-        // 이메일 인증 필요: 확인 화면으로 전환
-        setEmailSent(email.trim().toLowerCase())
-        setIsLoading(false)
+        // 인증 대기 페이지로 이동 (새로고침해도 유지되도록 별도 라우트)
+        window.location.href = `/signup/verify?email=${encodeURIComponent(normalizedEmail)}`
         return
       }
 
@@ -97,37 +97,6 @@ export default function SignupPage() {
       setErrors({ general: '오류: ' + (err instanceof Error ? err.message : String(err)) })
       setIsLoading(false)
     }
-  }
-
-  if (emailSent) {
-    return (
-      <div className="bg-white rounded-3xl p-8 shadow-xl border border-orange-100">
-        <div className="text-center mb-6">
-          <div className="text-5xl mb-4">📬</div>
-          <h1 className="text-2xl font-bold text-stone-900 mb-2">메일함을 확인해주세요</h1>
-          <p className="text-stone-500 text-sm">
-            <span className="font-semibold text-stone-700">{emailSent}</span>로<br />
-            인증 메일을 발송했어요.
-          </p>
-        </div>
-
-        <div className="bg-orange-50 border border-orange-100 rounded-xl p-4 mb-6 text-sm text-stone-700">
-          <p className="font-semibold mb-2">📝 다음 단계</p>
-          <ol className="list-decimal list-inside space-y-1 text-xs text-stone-600">
-            <li>받은 메일에서 인증 링크를 클릭해주세요</li>
-            <li>인증이 완료되면 자동으로 로그인됩니다</li>
-            <li>메일이 안 보이면 스팸함도 확인해보세요</li>
-          </ol>
-        </div>
-
-        <Link
-          href="/login"
-          className="block w-full bg-orange-500 text-white py-3.5 rounded-xl font-bold text-base hover:bg-orange-600 transition-all text-center"
-        >
-          로그인 페이지로 →
-        </Link>
-      </div>
-    )
   }
 
   return (

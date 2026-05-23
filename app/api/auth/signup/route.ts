@@ -66,12 +66,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: '회원가입에 실패했습니다.' }, { status: 400 })
   }
 
-  if (!data.user) {
-    return NextResponse.json({ error: '유저 생성에 실패했습니다.' }, { status: 500 })
-  }
-
-  // Confirm email 켜진 경우 data.session === null (메일 발송됨)
-  // 꺼진 경우 data.session 존재 (즉시 사용 가능)
+  // Supabase가 enumeration 방지 모드에서 data.user를 null로 반환하더라도
+  // 메일은 발송됐을 수 있으므로 needsEmailConfirmation: true로 처리.
+  // (실제 사용자는 메일 인증 후 정상 가입됨)
   return NextResponse.json({
     success: true,
     needsEmailConfirmation: !data.session,

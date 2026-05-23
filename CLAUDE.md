@@ -32,6 +32,7 @@ Vercel 환경변수에도 동일하게 설정 완료.
 ```
 app/
   (auth)/login, signup       # 로그인·회원가입 (Supabase 이메일 인증 사용)
+  (auth)/signup/verify       # 가입 후 인증 메일 대기 안내 페이지 (?email=...)
   auth/callback              # Supabase 이메일 링크 콜백 (exchangeCodeForSession)
   (app)/
     dashboard/               # 홈 (오늘의 팁, 최근 콘텐츠, 매출 요약)
@@ -105,7 +106,9 @@ create 페이지
 ```
 
 ## 주요 구현 결정사항
-- **이메일 인증 활성화:** `supabase.auth.signUp({ options: { emailRedirectTo: '/auth/callback' } })`. Supabase 대시보드 "Confirm email" ON 상태 필수. 인증 메일 링크 클릭 → `/auth/callback`에서 `exchangeCodeForSession` → `/onboarding` 리다이렉트.
+- **이메일 인증 활성화:** `supabase.auth.signUp({ options: { emailRedirectTo: '/auth/callback' } })`. Supabase 대시보드 "Confirm email" ON 상태 필수.
+  - **회원가입 흐름:** signup 폼 제출 → `/signup/verify?email=...`로 리다이렉트 (대기 안내) → 메일 인증 링크 클릭 → `/auth/callback`에서 `exchangeCodeForSession` → `/onboarding`
+  - signup API는 Supabase가 enumeration 방지로 `data.user`를 null 반환해도 항상 `needsEmailConfirmation: true`로 응답 (메일은 발송됐을 수 있으므로)
 - **Rate Limit (Brute Force 방어):**
   - 로그인 라우트 자체에 `checkRateLimit` 직접 적용 (15분 5회). 성공 시 `resetAttempts`, 실패 시 `incrementAttempt`. 클라이언트 우회 차단.
   - 회원가입 라우트도 IP 기반 rate limit (60분 5회) — 스팸 가입 방어

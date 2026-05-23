@@ -11,8 +11,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // Public routes that don't need auth
-  const publicRoutes = ['/', '/login', '/signup']
-  const authRoutes = ['/login', '/signup']
+  const publicRoutes = ['/', '/login', '/signup', '/signup/verify']
+  const authRoutes = ['/login', '/signup', '/signup/verify']
   const appRoutes = pathname.startsWith('/(app)') ||
     pathname.startsWith('/dashboard') ||
     pathname.startsWith('/create') ||
