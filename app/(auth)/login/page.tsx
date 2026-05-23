@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { z } from 'zod'
@@ -11,6 +11,14 @@ const loginSchema = z.object({
 })
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="bg-white rounded-3xl p-8 shadow-xl border border-orange-100 text-center text-stone-400">로딩 중...</div>}>
+      <LoginForm />
+    </Suspense>
+  )
+}
+
+function LoginForm() {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
