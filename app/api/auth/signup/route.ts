@@ -51,17 +51,24 @@ export async function POST(request: NextRequest) {
   })
 
   if (error) {
+    const msg = error.message.toLowerCase()
+
     // 이메일 enumeration 방지: 'already exists' 류는 일반화된 응답
-    if (
-      error.message.toLowerCase().includes('already') ||
-      error.message.toLowerCase().includes('exists') ||
-      error.message.toLowerCase().includes('registered')
-    ) {
+    if (msg.includes('already') || msg.includes('exists') || msg.includes('registered')) {
       return NextResponse.json({
         success: true,
         needsEmailConfirmation: true,
       })
     }
+
+    // Supabase 자체 메일 발송 한도 (Free 플랜은 시간당 제한)
+    if (msg.includes('rate limit') || msg.includes('email rate')) {
+      return NextResponse.json(
+        { error: '인증 메일 발송 한도에 도달했어요. 약 1시간 후 다시 시도해주세요.' },
+        { status: 429 }
+      )
+    }
+
     console.error('Signup error:', error.message)
     return NextResponse.json({ error: '회원가입에 실패했습니다.' }, { status: 400 })
   }
